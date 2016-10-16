@@ -7,6 +7,26 @@
 //
 
 import UIKit
+fileprivate func < <T : Comparable>(lhs: T?, rhs: T?) -> Bool {
+  switch (lhs, rhs) {
+  case let (l?, r?):
+    return l < r
+  case (nil, _?):
+    return true
+  default:
+    return false
+  }
+}
+
+fileprivate func > <T : Comparable>(lhs: T?, rhs: T?) -> Bool {
+  switch (lhs, rhs) {
+  case let (l?, r?):
+    return l > r
+  default:
+    return rhs < lhs
+  }
+}
+
 
 class SwipeRightToPopViewController: UIViewController {
 
@@ -25,37 +45,37 @@ class SwipeRightToPopViewController: UIViewController {
             return
         }
         
-        panGestureRecognizer = UIPanGestureRecognizer(target: self, action: "handlePanGesture:")
+        panGestureRecognizer = UIPanGestureRecognizer(target: self, action: #selector(SwipeRightToPopViewController.handlePanGesture(_:)))
         self.view.addGestureRecognizer(panGestureRecognizer)
     }
     
-    func handlePanGesture(panGesture: UIPanGestureRecognizer) {
+    func handlePanGesture(_ panGesture: UIPanGestureRecognizer) {
         
-        let percent = max(panGesture.translationInView(view).x, 0) / view.frame.width
+        let percent = max(panGesture.translation(in: view).x, 0) / view.frame.width
         
         switch panGesture.state {
             
-        case .Began:
+        case .began:
             navigationController?.delegate = self
-            navigationController?.popViewControllerAnimated(true)
+            _ = navigationController?.popViewController(animated: true)
             
-        case .Changed:
+        case .changed:
             if let percentDrivenInteractiveTransition = percentDrivenInteractiveTransition {
-                percentDrivenInteractiveTransition.updateInteractiveTransition(percent)
+                percentDrivenInteractiveTransition.update(percent)
             }
             
-        case .Ended:
-            let velocity = panGesture.velocityInView(view).x
+        case .ended:
+            let velocity = panGesture.velocity(in: view).x
             
             // Continue if drag more than 50% of screen width or velocity is higher than 1000
             if percent > 0.5 || velocity > 1000 {
-                percentDrivenInteractiveTransition.finishInteractiveTransition()
+                percentDrivenInteractiveTransition.finish()
             } else {
-                percentDrivenInteractiveTransition.cancelInteractiveTransition()
+                percentDrivenInteractiveTransition.cancel()
             }
             
-        case .Cancelled, .Failed:
-            percentDrivenInteractiveTransition.cancelInteractiveTransition()
+        case .cancelled, .failed:
+            percentDrivenInteractiveTransition.cancel()
             
         default:
             break
@@ -70,18 +90,18 @@ class SwipeRightToPopViewController: UIViewController {
 
 extension SwipeRightToPopViewController: UINavigationControllerDelegate {
 
-    func navigationController(navigationController: UINavigationController, animationControllerForOperation operation: UINavigationControllerOperation, fromViewController fromVC: UIViewController, toViewController toVC: UIViewController) -> UIViewControllerAnimatedTransitioning? {
+    func navigationController(_ navigationController: UINavigationController, animationControllerFor operation: UINavigationControllerOperation, from fromVC: UIViewController, to toVC: UIViewController) -> UIViewControllerAnimatedTransitioning? {
         
         return SlideAnimatedTransitioning()
     }
     
-    func navigationController(navigationController: UINavigationController, interactionControllerForAnimationController animationController: UIViewControllerAnimatedTransitioning) -> UIViewControllerInteractiveTransitioning? {
+    func navigationController(_ navigationController: UINavigationController, interactionControllerFor animationController: UIViewControllerAnimatedTransitioning) -> UIViewControllerInteractiveTransitioning? {
         
         navigationController.delegate = nil
         
-        if panGestureRecognizer.state == .Began {
+        if panGestureRecognizer.state == .began {
             percentDrivenInteractiveTransition = UIPercentDrivenInteractiveTransition()
-            percentDrivenInteractiveTransition.completionCurve = .EaseOut
+            percentDrivenInteractiveTransition.completionCurve = .easeOut
         } else {
             percentDrivenInteractiveTransition = nil
         }
